@@ -1,0 +1,25 @@
+{
+  "name": "quick-chess-checkmate-practice",
+  "version": "1.0.0",
+  "description": "Interactive Chess Checkmate Practice Module - Quick Chess For You Coding Assignment",
+  "scripts": {
+    "dev": "npm run dev --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "build": "npm run build --prefix client",
+    "start": "node server/src/index.js",
+    "test:client": "npm test --prefix client",
+    "test:server": "npm test --prefix server",
+    "test": "npm test --prefix client && npm test --prefix server"
+  },
+  "keywords": [
+    "chess",
+    "checkmate",
+    "practice",
+    "stockfish",
+    "react",
+    "lichess",
+    "full-stack"
+  ],
+  "author": "Aryan",
+  "license": "MIT"
+}

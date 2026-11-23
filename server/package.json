@@ -1,0 +1,22 @@
+{
+  "name": "quick-chess-backend",
+  "version": "1.0.0",
+  "description": "Quick Chess For You - Practice Module Backend API",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test test/api.test.js"
+  },
+  "dependencies": {
+    "chess.js": "^1.4.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.7.5",
+    "helmet": "^8.3.0",
+    "mongoose": "^9.13.1",
+    "socket.io": "^4.8.4"
+  }
+}
