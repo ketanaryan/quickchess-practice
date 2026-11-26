@@ -1,0 +1,14 @@
+[
+  {
+    "chapterId": "queen-mate",
+    "levelId": "qm-edge",
+    "moveCount": 2,
+    "benchmarkMoves": 2,
+    "stars": 3,
+    "accuracy": 100,
+    "timeElapsedSeconds": null,
+    "createdAt": "2026-11-27T04:41:39.154Z",
+    "_id": "sess_1795754499154_y1gy9v",
+    "storage": "persistent_json_file"
+  }
+]
