@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Chess, Square, Move } from 'chess.js';
 import { BoardTheme } from '../constants/boardThemes';
+import { EvaluationBar } from './EvaluationBar';
 
 interface ChessboardViewProps {
   chess: Chess;
@@ -11,6 +12,9 @@ interface ChessboardViewProps {
   hintMove: { from: string; to: string } | null;
   lastMove: { from: string; to: string } | null;
   isCheck: boolean;
+  evalScore: number;
+  displayFen?: string;
+  isReplaying?: boolean;
 }
 
 export const ChessboardView: React.FC<ChessboardViewProps> = ({
@@ -21,25 +25,30 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
   hintMove,
   lastMove,
   isCheck,
+  evalScore,
+  displayFen,
+  isReplaying = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [boardWidth, setBoardWidth] = useState<number>(480);
+  const [boardWidth, setBoardWidth] = useState<number>(380);
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
   const [optionSquares, setOptionSquares] = useState<Record<string, React.CSSProperties>>({});
 
-  // Responsive board sizing
+  // Responsive board sizing: optimized for split-screen window
   useEffect(() => {
-    const handleResize = () => {
+    const updateSize = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.clientWidth;
-        const newWidth = Math.min(containerWidth - 32, 540);
-        setBoardWidth(Math.max(newWidth, 280));
+        const availableHeight = window.innerHeight - 180;
+        const maxFromWidth = containerWidth - 36;
+        const target = Math.min(maxFromWidth, availableHeight, 460);
+        setBoardWidth(Math.max(target, 260));
       }
     };
 
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
   }, []);
 
   // Find king square if in check
@@ -58,7 +67,7 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
     return null;
   }, [chess, isCheck]);
 
-  // Generate legal move indicators for clicked square
+  // Generate legal move indicators
   const getMoveOptions = (square: Square) => {
     const moves = chess.moves({
       square,
@@ -82,7 +91,6 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
       };
     });
 
-    // Highlight selected piece square
     newSquares[square] = {
       background: 'rgba(255, 255, 0, 0.4)',
     };
@@ -92,7 +100,7 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
   };
 
   const onSquareClick = (square: Square) => {
-    if (isEngineThinking) return;
+    if (isEngineThinking || isReplaying) return;
 
     if (selectedSquare) {
       const moves = chess.moves({
@@ -124,7 +132,7 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
   };
 
   const onPieceDrop = (sourceSquare: string, targetSquare: string | null): boolean => {
-    if (isEngineThinking || !targetSquare) return false;
+    if (isEngineThinking || !targetSquare || isReplaying) return false;
 
     const success = onMakeMove({
       from: sourceSquare,
@@ -137,30 +145,29 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
     return success;
   };
 
-  // Custom square styles (last move, check, hint, selection)
   const customSquareStyles = useMemo(() => {
     const styles: Record<string, React.CSSProperties> = { ...optionSquares };
 
     if (lastMove) {
       styles[lastMove.from] = {
         ...(styles[lastMove.from] || {}),
-        backgroundColor: 'rgba(255, 240, 100, 0.45)',
+        background: 'rgba(255, 240, 100, 0.45)',
       };
       styles[lastMove.to] = {
         ...(styles[lastMove.to] || {}),
-        backgroundColor: 'rgba(255, 240, 100, 0.45)',
+        background: 'rgba(255, 240, 100, 0.45)',
       };
     }
 
     if (hintMove) {
       styles[hintMove.from] = {
         ...(styles[hintMove.from] || {}),
-        backgroundColor: 'rgba(56, 189, 248, 0.55)',
+        background: 'rgba(56, 189, 248, 0.55)',
         boxShadow: 'inset 0 0 0 3px #0284c7',
       };
       styles[hintMove.to] = {
         ...(styles[hintMove.to] || {}),
-        backgroundColor: 'rgba(56, 189, 248, 0.55)',
+        background: 'rgba(56, 189, 248, 0.55)',
         boxShadow: 'inset 0 0 0 3px #0284c7',
       };
     }
@@ -191,49 +198,66 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col items-center justify-center p-2 sm:p-4 select-none relative w-full"
+      className="flex flex-col items-center justify-center p-1 sm:p-3 select-none relative w-full"
     >
-      <div
-        className="relative shadow-2xl rounded-lg overflow-hidden border-2 border-lichess-border/80 bg-lichess-dark flex items-center justify-center"
-        style={{ width: boardWidth, height: boardWidth }}
-      >
-        <Chessboard
-          options={{
-            position: chess.fen(),
-            boardOrientation: 'white',
-            boardStyle: {
-              width: `${boardWidth}px`,
-              height: `${boardWidth}px`,
-            },
-            darkSquareStyle: { backgroundColor: theme.darkSquare },
-            lightSquareStyle: { backgroundColor: theme.lightSquare },
-            squareStyles: customSquareStyles,
-            arrows: customArrows,
-            allowDragging: !isEngineThinking && !chess.isGameOver(),
-            animationDurationInMs: 220,
-            onPieceDrop: ({ sourceSquare, targetSquare }) => onPieceDrop(sourceSquare, targetSquare),
-            onSquareClick: ({ square }) => onSquareClick(square as Square),
-          }}
+      <div className="flex items-center justify-center">
+        <EvaluationBar
+          score={evalScore}
+          isCheckmate={chess.isCheckmate()}
+          isStalemate={chess.isStalemate() || chess.isDraw()}
+          height={boardWidth}
         />
 
-        {/* Engine thinking overlay indicator */}
-        {isEngineThinking && (
-          <div className="absolute top-3 right-3 bg-black/75 backdrop-blur-sm px-3 py-1.5 rounded-full border border-gray-700 flex items-center gap-2 shadow-lg animate-fade-in pointer-events-none z-20">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span className="text-xs text-gray-200 font-medium">Computer moving...</span>
-          </div>
-        )}
+        <div
+          className="relative shadow-2xl rounded-lg overflow-hidden border-2 border-lichess-border/80 bg-lichess-dark flex items-center justify-center"
+          style={{ width: boardWidth, height: boardWidth }}
+        >
+          <Chessboard
+            options={{
+              position: displayFen || chess.fen(),
+              boardOrientation: 'white',
+              boardStyle: {
+                width: `${boardWidth}px`,
+                height: `${boardWidth}px`,
+              },
+              darkSquareStyle: { backgroundColor: theme.darkSquare },
+              lightSquareStyle: { backgroundColor: theme.lightSquare },
+              squareStyles: isReplaying ? {} : customSquareStyles,
+              arrows: isReplaying ? [] : customArrows,
+              allowDragging: !isEngineThinking && !chess.isGameOver() && !isReplaying,
+              animationDurationInMs: 180,
+              onPieceDrop: ({ sourceSquare, targetSquare }) => onPieceDrop(sourceSquare, targetSquare),
+              onSquareClick: ({ square }) => onSquareClick(square as Square),
+            }}
+          />
+
+          {isReplaying && (
+            <div className="absolute top-2 left-2 bg-blue-950/90 text-blue-300 border border-blue-500/50 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 shadow-lg pointer-events-none z-20">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+              <span>Timeline Review</span>
+            </div>
+          )}
+
+          {isEngineThinking && (
+            <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-sm px-2.5 py-1 rounded-full border border-gray-700 flex items-center gap-1.5 shadow-lg pointer-events-none z-20">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+              <span className="text-[11px] text-gray-200 font-medium">Thinking...</span>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Board bottom coordinates helper note */}
-      <div className="flex items-center justify-between w-full max-w-[540px] px-2 mt-2 text-xs text-gray-400">
-        <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-white border border-gray-400 inline-block" />
-          <span>You play White</span>
+      <div className="flex items-center justify-between w-full max-w-[460px] px-2 mt-1.5 text-[11px] text-gray-400">
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-white border border-gray-400 inline-block" />
+          <span>You (White)</span>
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-black border border-gray-700 inline-block" />
-          <span>Computer defends Black</span>
+        <span className="hidden sm:inline text-gray-400">
+          <kbd className="px-1 py-0.5 rounded bg-gray-800 text-gray-300">←</kbd> Undo, <kbd className="px-1 py-0.5 rounded bg-gray-800 text-gray-300">H</kbd> Hint, <kbd className="px-1 py-0.5 rounded bg-gray-800 text-gray-300">R</kbd> Restart
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-black border border-gray-700 inline-block" />
+          <span>Computer (Black)</span>
         </span>
       </div>
     </div>

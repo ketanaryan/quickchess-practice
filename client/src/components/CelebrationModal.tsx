@@ -10,6 +10,7 @@ interface CelebrationModalProps {
   level: ChapterLevel;
   moveCount: number;
   moveHistory: MoveRecord[];
+  elapsedSeconds?: number;
   onNextChapter: () => void;
   onRestart: () => void;
 }
@@ -20,6 +21,7 @@ export const CelebrationModal: React.FC<CelebrationModalProps> = ({
   level,
   moveCount,
   moveHistory,
+  elapsedSeconds,
   onNextChapter,
   onRestart,
 }) => {
@@ -88,7 +90,7 @@ export const CelebrationModal: React.FC<CelebrationModalProps> = ({
         </div>
 
         {/* Stats card */}
-        <div className="bg-lichess-dark/80 border border-lichess-border rounded-xl p-2.5 mb-3 grid grid-cols-2 gap-3">
+        <div className={`bg-lichess-dark/80 border border-lichess-border rounded-xl p-2.5 mb-3 grid ${elapsedSeconds && elapsedSeconds > 0 ? 'grid-cols-3' : 'grid-cols-2'} gap-2 sm:gap-3`}>
           <div>
             <div className="text-[10px] uppercase font-semibold text-gray-400">Your Moves</div>
             <div className="text-lg font-bold font-mono text-emerald-400 mt-0.5">{moveCount}</div>
@@ -97,6 +99,12 @@ export const CelebrationModal: React.FC<CelebrationModalProps> = ({
             <div className="text-[10px] uppercase font-semibold text-gray-400">Benchmark</div>
             <div className="text-lg font-bold font-mono text-gray-300 mt-0.5">≤ {level.benchmarkMoves}</div>
           </div>
+          {elapsedSeconds !== undefined && elapsedSeconds > 0 && (
+            <div>
+              <div className="text-[10px] uppercase font-semibold text-amber-400">Speedrun</div>
+              <div className="text-lg font-bold font-mono text-amber-300 mt-0.5">{elapsedSeconds.toFixed(1)}s</div>
+            </div>
+          )}
         </div>
 
         {/* Lichess Post-Game Move Accuracy Graph (Centipawn Curve) */}

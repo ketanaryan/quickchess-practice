@@ -18,6 +18,12 @@ import {
   Compass,
   Sword,
   CheckCircle2,
+  Timer,
+  SkipBack,
+  SkipForward,
+  Play,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { PracticeChapter, ChapterLevel, MoveRecord, ChapterProgress } from '../types/chess';
 import { MoveAnalysis } from '../services/chessEngine';
@@ -38,6 +44,13 @@ interface PracticePanelProps {
   currentHint: MoveAnalysis | null;
   onSelectChapter: (chapter: PracticeChapter, level?: ChapterLevel) => void;
   progressMap: Record<string, ChapterProgress>;
+  // Timeline Replayer props
+  viewingIndex: number | null;
+  onNavigateHistory: (index: number | null) => void;
+  // Stopwatch prop
+  elapsedSeconds: number;
+  // Current FEN for export
+  currentFen: string;
 }
 
 export const PracticePanel: React.FC<PracticePanelProps> = ({
@@ -56,9 +69,14 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
   currentHint,
   onSelectChapter,
   progressMap,
+  viewingIndex,
+  onNavigateHistory,
+  elapsedSeconds,
+  currentFen,
 }) => {
   const [showStrategy, setShowStrategy] = useState<boolean>(true);
   const [showChapterMenu, setShowChapterMenu] = useState<boolean>(false);
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
 
   const getChapterIcon = (iconName: string) => {
     switch (iconName) {
@@ -84,11 +102,14 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
     onSelectChapter(chapters[nextIndex], chapters[nextIndex].levels[0]);
   };
 
-  const movePairs: { white?: MoveRecord; black?: MoveRecord }[] = [];
+  // Group moves into turns for display
+  const movePairs: { white?: MoveRecord; black?: MoveRecord; whiteIdx?: number; blackIdx?: number }[] = [];
   for (let i = 0; i < moveHistory.length; i += 2) {
     movePairs.push({
       white: moveHistory[i],
+      whiteIdx: i,
       black: moveHistory[i + 1],
+      blackIdx: i + 1 < moveHistory.length ? i + 1 : undefined,
     });
   }
 
@@ -99,6 +120,29 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
   };
 
   const projectedStars = getProjectedStars();
+
+  // Export PGN / FEN
+  const handleCopyPgn = () => {
+    let pgn = '';
+    movePairs.forEach((pair, idx) => {
+      pgn += `${idx + 1}. ${pair.white?.san || ''} ${pair.black?.san || ''} `;
+    });
+    navigator.clipboard.writeText(pgn.trim());
+    setCopyStatus('PGN Copied!');
+    setTimeout(() => setCopyStatus(null), 2000);
+  };
+
+  const handleCopyFen = () => {
+    navigator.clipboard.writeText(currentFen);
+    setCopyStatus('FEN Copied!');
+    setTimeout(() => setCopyStatus(null), 2000);
+  };
+
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = (secs % 60).toFixed(1);
+    return m > 0 ? `${m}m ${s}s` : `${s}s`;
+  };
 
   return (
     <div className="w-full md:w-80 lg:w-96 flex flex-col gap-2.5 select-none shrink-0">
@@ -219,7 +263,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
         </div>
       </div>
 
-      {/* Dynamic Status & Move Counter Card */}
+      {/* Dynamic Status, Speedrun Stopwatch & Move Counter Card */}
       <div className="bg-lichess-surface border border-lichess-border rounded-xl p-3 shadow-md">
         <div className="flex items-center justify-between">
           <div>
@@ -247,18 +291,32 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
             </div>
           </div>
 
-          <div className="text-right">
-            <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-              Moves
-            </span>
-            <div className="text-sm font-mono font-bold text-gray-100">
-              <span className={moveCount > level.benchmarkMoves ? 'text-amber-400' : 'text-emerald-400'}>
-                {moveCount}
+          <div className="flex items-center gap-3">
+            {/* Speedrun Stopwatch */}
+            <div className="text-right">
+              <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider flex items-center gap-1 justify-end">
+                <Timer className="w-3 h-3 text-sky-400" />
+                Time
               </span>
-              <span className="text-gray-400 text-xs"> / {level.benchmarkMoves}</span>
-              <span className="text-[10px] text-amber-400 ml-1.5 font-sans">
-                {'★'.repeat(projectedStars)}
+              <div className="text-xs font-mono font-bold text-sky-300 mt-0.5">
+                {formatTime(elapsedSeconds)}
+              </div>
+            </div>
+
+            {/* Move Counter */}
+            <div className="text-right border-l border-lichess-border/70 pl-2.5">
+              <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                Moves
               </span>
+              <div className="text-sm font-mono font-bold text-gray-100">
+                <span className={moveCount > level.benchmarkMoves ? 'text-amber-400' : 'text-emerald-400'}>
+                  {moveCount}
+                </span>
+                <span className="text-gray-400 text-xs"> / {level.benchmarkMoves}</span>
+                <span className="text-[10px] text-amber-400 ml-1.5 font-sans">
+                  {'★'.repeat(projectedStars)}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -308,29 +366,129 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
         )}
       </div>
 
-      {/* Move History */}
-      <div className="bg-lichess-surface border border-lichess-border rounded-xl p-2.5 shadow-md max-h-[120px] flex flex-col">
-        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 flex items-center justify-between">
-          <span>Notation</span>
-          <span className="text-[10px] text-gray-400 font-normal">{moveHistory.length} plies</span>
+      {/* Move History & Interactive Timeline Replayer */}
+      <div className="bg-lichess-surface border border-lichess-border rounded-xl p-2.5 shadow-md flex flex-col">
+        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+          <span>Notation History ({moveHistory.length} plies)</span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleCopyFen}
+              className="px-1.5 py-0.5 rounded bg-lichess-dark hover:bg-lichess-surfaceHover text-[9px] text-gray-300 border border-lichess-border flex items-center gap-1 transition-colors"
+              title="Copy FEN position"
+            >
+              {copyStatus === 'FEN Copied!' ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5" />}
+              <span>FEN</span>
+            </button>
+            <button
+              onClick={handleCopyPgn}
+              className="px-1.5 py-0.5 rounded bg-lichess-dark hover:bg-lichess-surfaceHover text-[9px] text-gray-300 border border-lichess-border flex items-center gap-1 transition-colors"
+              title="Copy PGN notation"
+            >
+              {copyStatus === 'PGN Copied!' ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5" />}
+              <span>PGN</span>
+            </button>
+          </div>
         </div>
 
-        <div className="overflow-y-auto flex-1 pr-1 font-mono text-xs space-y-0.5">
+        {/* Clickable Move Pairs List */}
+        <div className="overflow-y-auto max-h-[105px] pr-1 font-mono text-xs space-y-0.5">
           {movePairs.length === 0 ? (
             <div className="text-gray-400 italic text-center py-2 text-[11px]">Make a move to start!</div>
           ) : (
-            movePairs.map((pair, idx) => (
-              <div
-                key={idx}
-                className="flex items-center py-0.5 px-1.5 rounded hover:bg-lichess-surfaceHover text-[11px]"
-              >
-                <span className="w-6 text-gray-400">{idx + 1}.</span>
-                <span className="w-14 font-semibold text-gray-100">{pair.white?.san}</span>
-                <span className="w-14 text-gray-400">{pair.black?.san || '...'}</span>
-              </div>
-            ))
+            movePairs.map((pair, idx) => {
+              const isWhiteSelected = viewingIndex === pair.whiteIdx;
+              const isBlackSelected = viewingIndex === pair.blackIdx;
+
+              return (
+                <div
+                  key={idx}
+                  className="flex items-center py-0.5 px-1.5 rounded hover:bg-lichess-surfaceHover text-[11px]"
+                >
+                  <span className="w-6 text-gray-400">{idx + 1}.</span>
+                  <button
+                    onClick={() => onNavigateHistory(pair.whiteIdx!)}
+                    className={`w-14 text-left font-semibold px-1 rounded transition-colors ${
+                      isWhiteSelected
+                        ? 'bg-emerald-600 text-white font-bold'
+                        : 'text-gray-100 hover:text-emerald-400'
+                    }`}
+                    title="Click to view this position"
+                  >
+                    {pair.white?.san}
+                  </button>
+                  {pair.black && (
+                    <button
+                      onClick={() => onNavigateHistory(pair.blackIdx!)}
+                      className={`w-14 text-left px-1 rounded transition-colors ${
+                        isBlackSelected
+                          ? 'bg-emerald-600 text-white font-bold'
+                          : 'text-gray-400 hover:text-emerald-400'
+                      }`}
+                      title="Click to view this position"
+                    >
+                      {pair.black.san}
+                    </button>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
+
+        {/* Lichess Timeline Step-Through Controls (⏮ ◀ ▶ ⏭) */}
+        {moveHistory.length > 0 && (
+          <div className="flex items-center justify-between pt-2 mt-2 border-t border-lichess-border/70 text-gray-300">
+            <button
+              onClick={() => onNavigateHistory(0)}
+              className="p-1 rounded bg-lichess-dark hover:bg-lichess-surfaceHover hover:text-white border border-lichess-border transition-colors"
+              title="First Move (⏮)"
+            >
+              <SkipBack className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() =>
+                onNavigateHistory(
+                  viewingIndex === null
+                    ? Math.max(0, moveHistory.length - 2)
+                    : Math.max(0, viewingIndex - 1)
+                )
+              }
+              className="p-1 rounded bg-lichess-dark hover:bg-lichess-surfaceHover hover:text-white border border-lichess-border transition-colors"
+              title="Previous Move (◀)"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+
+            <span className="text-[10px] font-mono text-emerald-400">
+              {viewingIndex !== null ? `Ply ${viewingIndex + 1}/${moveHistory.length}` : 'Live Play'}
+            </span>
+
+            <button
+              onClick={() =>
+                onNavigateHistory(
+                  viewingIndex === null || viewingIndex >= moveHistory.length - 1
+                    ? null
+                    : viewingIndex + 1
+                )
+              }
+              className="p-1 rounded bg-lichess-dark hover:bg-lichess-surfaceHover hover:text-white border border-lichess-border transition-colors"
+              title="Next Move (▶)"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => onNavigateHistory(null)}
+              className={`p-1 rounded border transition-colors ${
+                viewingIndex === null
+                  ? 'bg-emerald-950 text-emerald-400 border-emerald-700/60'
+                  : 'bg-lichess-dark hover:bg-lichess-surfaceHover text-gray-300 hover:text-white border-lichess-border'
+              }`}
+              title="Jump to Live Board (⏭)"
+            >
+              <SkipForward className="w-3 h-3" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Strategy Guide Accordion */}

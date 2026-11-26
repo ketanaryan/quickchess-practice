@@ -51,6 +51,23 @@ export const App: React.FC = () => {
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
   const [showStalemate, setShowStalemate] = useState<boolean>(false);
 
+  // Speedrun Stopwatch & Interactive History Replayer
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+  const [viewingIndex, setViewingIndex] = useState<number | null>(null);
+
+  // Live timer runs during active solving until victory/stalemate
+  useEffect(() => {
+    let timer: any = null;
+    if (moveHistory.length > 0 && !showCelebration && !showStalemate) {
+      timer = setInterval(() => {
+        setElapsedSeconds((prev) => +(prev + 0.1).toFixed(1));
+      }, 100);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [moveHistory.length, showCelebration, showStalemate]);
+
   // Progress tracking with local storage protection
   const [progressMap, setProgressMap] = useState<Record<string, ChapterProgress>>(() => {
     try {
@@ -98,6 +115,8 @@ export const App: React.FC = () => {
     setLastMove(null);
     setHintMove(null);
     setCurrentHint(null);
+    setElapsedSeconds(0);
+    setViewingIndex(null);
     setEvalScore(evaluatePosition(newChess));
     setIsEngineThinking(false);
     setShowCelebration(false);
@@ -334,9 +353,39 @@ export const App: React.FC = () => {
     soundService.playMove();
   }, [activeLevel.fen, chess, isEngineThinking, moveHistory]);
 
-  // Hint button (calculated on-demand only)
-  const handleRequestHint = useCallback(() => {
+  // Hint button (queries Stockfish first, with heuristic fallback)
+  const handleRequestHint = useCallback(async () => {
     if (chess.isGameOver() || isEngineThinking) return;
+
+    try {
+      const sfMove = await stockfishService.getEngineMove(chess, 10);
+      if (sfMove) {
+        const moves = chess.moves({ verbose: true });
+        const matching = moves.find((m) => m.from === sfMove.from && m.to === sfMove.to);
+        if (matching) {
+          const fallbackHint = ChessEngineService.getHint(chess);
+          let explanation = fallbackHint.hintExplanation;
+          if (matching.san.includes('#')) {
+            explanation = `Deliver checkmate with ${matching.san}!`;
+          } else if (matching.piece === 'k') {
+            explanation = `The defending King is boxed in on the edge! March your King to ${matching.to} to prepare the final checkmate.`;
+          } else if (matching.piece === 'q') {
+            explanation = `Position your Queen on ${matching.to} to restrict the King's escape squares while avoiding stalemate.`;
+          }
+
+          setCurrentHint({
+            bestMove: `${matching.from}${matching.to}`,
+            evalScore: fallbackHint.evalScore,
+            hintExplanation: explanation,
+          });
+          setHintMove({ from: matching.from, to: matching.to });
+          return;
+        }
+      }
+    } catch {
+      // Fallback to heuristic
+    }
+
     const hint = ChessEngineService.getHint(chess);
     setCurrentHint(hint);
     if (hint.bestMove) {
@@ -396,6 +445,16 @@ export const App: React.FC = () => {
     [progressMap]
   );
 
+  // Computed FEN for history timeline scrubbing
+  const displayFen = useMemo(() => {
+    if (viewingIndex === null) return undefined;
+    if (viewingIndex === -1) return activeLevel.fen;
+    if (viewingIndex >= 0 && viewingIndex < moveHistory.length) {
+      return moveHistory[viewingIndex].fen;
+    }
+    return undefined;
+  }, [viewingIndex, activeLevel.fen, moveHistory]);
+
   return (
     <div className="min-h-screen bg-lichess-dark text-gray-200 flex flex-col font-sans">
       <Header
@@ -436,6 +495,8 @@ export const App: React.FC = () => {
               lastMove={lastMove}
               isCheck={chess.inCheck()}
               evalScore={evalScore}
+              displayFen={displayFen}
+              isReplaying={viewingIndex !== null}
             />
           </div>
 
@@ -456,6 +517,10 @@ export const App: React.FC = () => {
             currentHint={currentHint}
             onSelectChapter={handleSelectChapter}
             progressMap={progressMap}
+            viewingIndex={viewingIndex}
+            onNavigateHistory={setViewingIndex}
+            elapsedSeconds={elapsedSeconds}
+            currentFen={chess.fen()}
           />
         </main>
       </div>
@@ -467,6 +532,7 @@ export const App: React.FC = () => {
         level={activeLevel}
         moveCount={whiteMoveCount}
         moveHistory={moveHistory}
+        elapsedSeconds={elapsedSeconds}
         onNextChapter={handleNextExercise}
         onRestart={() => loadLevel(activeLevel)}
       />

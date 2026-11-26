@@ -45,7 +45,7 @@ function saveLocalSession(record) {
 }
 
 export class SessionService {
-  public static async recordSession(data) {
+  static async recordSession(data) {
     const sessionData = {
       chapterId: data.chapterId,
       levelId: data.levelId || 'default',
@@ -76,7 +76,7 @@ export class SessionService {
     return fallbackRecord;
   }
 
-  public static async getStats(chapters) {
+  static async getStats(chapters) {
     let allSessions = [];
 
     if (isMongoConnected()) {
