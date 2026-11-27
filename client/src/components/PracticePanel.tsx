@@ -145,7 +145,7 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
   };
 
   return (
-    <div className="w-full md:w-80 lg:w-96 flex flex-col gap-2.5 select-none shrink-0">
+    <div className="w-full md:w-96 lg:w-[420px] xl:w-[440px] flex flex-col gap-2.5 select-none shrink-0">
       {/* Sleek Lichess-style Chapter Navigation Card */}
       <div className="bg-lichess-surface border border-lichess-border rounded-xl p-3 shadow-md relative">
         <div className="flex items-center justify-between text-xs text-gray-400 mb-1.5 pb-1.5 border-b border-lichess-border/60">

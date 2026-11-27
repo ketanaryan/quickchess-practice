@@ -34,15 +34,15 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
   const [optionSquares, setOptionSquares] = useState<Record<string, React.CSSProperties>>({});
 
-  // Responsive board sizing: optimized for split-screen window
+  // Responsive board sizing: dynamic scaling for both split-screen and full desktop
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.clientWidth;
-        const availableHeight = window.innerHeight - 180;
-        const maxFromWidth = containerWidth - 36;
-        const target = Math.min(maxFromWidth, availableHeight, 460);
-        setBoardWidth(Math.max(target, 260));
+        const availableHeight = window.innerHeight - 150;
+        const maxFromWidth = containerWidth - 28;
+        const target = Math.min(maxFromWidth, availableHeight, 620);
+        setBoardWidth(Math.max(target, 280));
       }
     };
 

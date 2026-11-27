@@ -482,10 +482,10 @@ export const App: React.FC = () => {
           progressMap={progressMap}
         />
 
-        {/* Main Chessboard & Study Area - Responsive Side-by-Side on md: screens */}
-        <main className="flex-1 flex flex-col md:flex-row items-center md:items-start justify-center p-2 sm:p-4 gap-3 sm:gap-6 overflow-y-auto">
+        {/* Main Chessboard & Study Area - Dynamic scaling for wide screens and split-screen */}
+        <main className="flex-1 flex flex-col lg:flex-row items-center lg:items-start justify-center p-2 sm:p-5 lg:p-6 gap-4 sm:gap-6 lg:gap-8 max-w-7xl mx-auto w-full overflow-y-auto">
           {/* Board Container */}
-          <div className="w-full md:flex-1 max-w-[500px] flex justify-center">
+          <div className="w-full lg:flex-1 max-w-[640px] flex justify-center">
             <ChessboardView
               chess={chess}
               onMakeMove={handleMakeMove}
