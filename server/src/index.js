@@ -213,6 +213,18 @@ app.get('*', (req, res, next) => {
   });
 });
 
+// Centralized Error Handling Middleware: Prevents stack trace disclosure
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ success: false, error: 'Malformed JSON payload' });
+  }
+  const isProd = process.env.NODE_ENV === 'production';
+  res.status(err.status || 500).json({
+    success: false,
+    error: isProd ? 'Internal server error' : err.message || 'Internal server error',
+  });
+});
+
 server.listen(PORT, () => {
   console.log(`[Quick Chess For You] Backend running on port ${PORT}`);
 });
