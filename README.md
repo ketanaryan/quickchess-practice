@@ -17,7 +17,7 @@
 This project is a high-performance, responsive web application for interactive endgame checkmate training. Built with modern React, TypeScript, Tailwind CSS, and Node.js/Express, it replicates and enhances the training experience of Lichess's renowned **Piece Checkmates I** series.
 
 ### Live Demo & Video Walkthrough
-- **GitHub Repository**: `https://github.com/<your-username>/quick-chess-practice`
+- **GitHub Repository**: `https://github.com/ketanaryan/quickchess-practice`
 - **Live Demo Link**: Deployable instantly on Vercel / Render / Netlify (see [Deployment](#deployment)).
 
 ---
@@ -119,8 +119,8 @@ quick-chess-for-you/
 ### 1. Installation
 Clone the repository and install dependencies:
 ```bash
-git clone https://github.com/<your-username>/quick-chess-practice.git
-cd quick-chess-practice
+git clone https://github.com/ketanaryan/quickchess-practice.git
+cd quickchess-practice
 
 # Install client and server dependencies
 cd client && npm install
