@@ -236,26 +236,34 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
         <div className="mt-2.5 pt-2 border-t border-lichess-border/60">
           <div className="text-[10px] uppercase font-bold text-gray-400 mb-1 flex items-center justify-between">
             <span>Setup Position:</span>
-            <span className="text-sky-400 flex items-center gap-1 font-mono">
+            <span className="text-sky-400 flex items-center gap-1 font-mono text-[10px]">
               <Target className="w-3 h-3" />
               Target: ≤ {level.benchmarkMoves} moves
             </span>
           </div>
-          <div className="flex gap-1 overflow-x-auto pb-0.5">
+          <div className="grid grid-cols-3 gap-1">
             {chapter.levels.map((lvl, idx) => {
               const isSelected = lvl.id === level.id;
+              const shortLabel = lvl.name.toLowerCase().includes('standard')
+                ? `${idx + 1}. Standard`
+                : lvl.name.toLowerCase().includes('corner')
+                ? `${idx + 1}. Corner`
+                : lvl.name.toLowerCase().includes('rim')
+                ? `${idx + 1}. Rim Mate`
+                : `${idx + 1}. Pos ${idx + 1}`;
+
               return (
                 <button
                   key={lvl.id}
                   onClick={() => onSelectChapter(chapter, lvl)}
-                  className={`flex-1 min-w-[70px] py-1 px-1.5 rounded-md text-[10px] font-semibold text-center truncate transition-colors ${
+                  className={`py-1.5 px-1 rounded-md text-[10px] font-semibold text-center truncate transition-colors ${
                     isSelected
                       ? 'bg-emerald-600 text-white shadow-xs'
                       : 'bg-lichess-dark text-gray-300 hover:bg-lichess-surfaceHover hover:text-white border border-lichess-border/60'
                   }`}
                   title={lvl.name}
                 >
-                  {idx + 1}. {lvl.name.split(':')[0]}
+                  {shortLabel}
                 </button>
               );
             })}
@@ -264,34 +272,34 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
       </div>
 
       {/* Dynamic Status, Speedrun Stopwatch & Move Counter Card */}
-      <div className="bg-lichess-surface border border-lichess-border rounded-xl p-3 shadow-md">
-        <div className="flex items-center justify-between">
-          <div>
+      <div className="bg-lichess-surface border border-lichess-border rounded-xl p-2.5 sm:p-3 shadow-md">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
             <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
               Status
             </span>
-            <div className="text-xs font-bold flex items-center gap-1.5 mt-0.5">
+            <div className="text-xs font-bold flex items-center gap-1.5 mt-0.5 truncate">
               {isCheckmate ? (
-                <span className="text-emerald-400 animate-bounce">🏆 Checkmate! Victory!</span>
+                <span className="text-emerald-400 animate-bounce">🏆 Checkmate!</span>
               ) : isStalemate ? (
-                <span className="text-amber-400">⚠️ Stalemate (Draw)</span>
+                <span className="text-amber-400">⚠️ Stalemate</span>
               ) : isCheck ? (
                 <span className="text-rose-400 animate-pulse">⚡ Check!</span>
               ) : isEngineThinking ? (
                 <span className="text-sky-400 flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping inline-block" />
-                  Computer moving...
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping inline-block" />
+                  Thinking...
                 </span>
               ) : (
                 <span className="text-gray-100 flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
                   White to move
                 </span>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Speedrun Stopwatch */}
             <div className="text-right">
               <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider flex items-center gap-1 justify-end">
@@ -304,18 +312,16 @@ export const PracticePanel: React.FC<PracticePanelProps> = ({
             </div>
 
             {/* Move Counter */}
-            <div className="text-right border-l border-lichess-border/70 pl-2.5">
+            <div className="text-right border-l border-lichess-border/70 pl-2">
               <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
                 Moves
               </span>
-              <div className="text-sm font-mono font-bold text-gray-100">
+              <div className="text-xs font-mono font-bold text-gray-200 mt-0.5 flex items-center gap-1 justify-end">
                 <span className={moveCount > level.benchmarkMoves ? 'text-amber-400' : 'text-emerald-400'}>
                   {moveCount}
                 </span>
-                <span className="text-gray-400 text-xs"> / {level.benchmarkMoves}</span>
-                <span className="text-[10px] text-amber-400 ml-1.5 font-sans">
-                  {'★'.repeat(projectedStars)}
-                </span>
+                <span className="text-gray-400 text-xs">/{level.benchmarkMoves}</span>
+                <span className="text-amber-400 text-[10px] hidden sm:inline">{'★'.repeat(getProjectedStars())}</span>
               </div>
             </div>
           </div>

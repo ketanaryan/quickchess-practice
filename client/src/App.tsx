@@ -483,7 +483,7 @@ export const App: React.FC = () => {
         />
 
         {/* Main Chessboard & Study Area - Dynamic scaling for wide screens and split-screen */}
-        <main className="flex-1 flex flex-col lg:flex-row items-center lg:items-start justify-center p-2 sm:p-5 lg:p-6 gap-4 sm:gap-6 lg:gap-8 max-w-7xl mx-auto w-full overflow-y-auto">
+        <main className="flex-1 flex flex-col lg:flex-row items-center lg:items-start justify-center p-1 sm:p-4 lg:p-6 gap-3 sm:gap-6 lg:gap-8 max-w-7xl mx-auto w-full overflow-y-auto">
           {/* Board Container */}
           <div className="w-full lg:flex-1 max-w-[640px] flex justify-center">
             <ChessboardView

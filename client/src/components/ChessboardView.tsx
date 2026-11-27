@@ -34,15 +34,17 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
   const [optionSquares, setOptionSquares] = useState<Record<string, React.CSSProperties>>({});
 
-  // Responsive board sizing: dynamic scaling for both split-screen and full desktop
+  // Responsive board sizing: dynamic scaling for small mobile (down to 220px) up to full desktop (620px)
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.clientWidth;
-        const availableHeight = window.innerHeight - 150;
-        const maxFromWidth = containerWidth - 28;
+        const availableHeight = window.innerHeight - (window.innerWidth < 640 ? 120 : 150);
+        const paddingOffset = window.innerWidth < 640 ? 8 : 28;
+        const maxFromWidth = Math.max(containerWidth - paddingOffset, 200);
         const target = Math.min(maxFromWidth, availableHeight, 620);
-        setBoardWidth(Math.max(target, 280));
+        const minAllowed = Math.min(220, maxFromWidth);
+        setBoardWidth(Math.max(minAllowed, target));
       }
     };
 
@@ -198,7 +200,7 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col items-center justify-center p-1 sm:p-3 select-none relative w-full"
+      className="flex flex-col items-center justify-center p-0.5 sm:p-2 select-none relative w-full"
     >
       <div className="flex items-center justify-center">
         <EvaluationBar
@@ -248,7 +250,7 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
       </div>
 
       <div
-        className="flex items-center justify-between px-2 mt-1.5 text-[11px] text-gray-400"
+        className="flex items-center justify-between px-1 mt-1 text-[10px] sm:text-[11px] text-gray-400"
         style={{ width: boardWidth }}
       >
         <span className="flex items-center gap-1">
