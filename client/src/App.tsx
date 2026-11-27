@@ -485,7 +485,7 @@ export const App: React.FC = () => {
         {/* Main Chessboard & Study Area - Responsive Side-by-Side on md: screens */}
         <main className="flex-1 flex flex-col md:flex-row items-center md:items-start justify-center p-2 sm:p-4 gap-3 sm:gap-6 overflow-y-auto">
           {/* Board Container */}
-          <div className="w-full md:flex-1 max-w-[480px] flex justify-center">
+          <div className="w-full md:flex-1 max-w-[500px] flex justify-center">
             <ChessboardView
               chess={chess}
               onMakeMove={handleMakeMove}

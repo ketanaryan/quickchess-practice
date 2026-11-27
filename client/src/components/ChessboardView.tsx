@@ -247,7 +247,10 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center justify-between w-full max-w-[460px] px-2 mt-1.5 text-[11px] text-gray-400">
+      <div
+        className="flex items-center justify-between px-2 mt-1.5 text-[11px] text-gray-400"
+        style={{ width: boardWidth }}
+      >
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-white border border-gray-400 inline-block" />
           <span>You (White)</span>

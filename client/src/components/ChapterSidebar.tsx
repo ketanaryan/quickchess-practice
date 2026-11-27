@@ -48,17 +48,17 @@ export const ChapterSidebar: React.FC<ChapterSidebarProps> = ({
 
   return (
     <>
-      {/* Mobile backdrop */}
+      {/* Drawer backdrop */}
       {isOpen && (
         <div
           onClick={onClose}
-          className="fixed inset-0 bg-black/60 z-30 lg:hidden backdrop-blur-xs"
+          className="fixed inset-0 bg-black/70 z-40 backdrop-blur-xs transition-opacity duration-200"
         />
       )}
 
       <aside
-        className={`fixed lg:static top-16 bottom-0 left-0 w-80 bg-lichess-surface border-r border-lichess-border z-40 transition-transform duration-200 ease-in-out shrink-0 overflow-y-auto flex flex-col ${
-          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        className={`fixed top-0 bottom-0 left-0 w-80 sm:w-96 bg-lichess-surface border-r border-lichess-border z-50 transition-transform duration-300 ease-out shadow-2xl shrink-0 overflow-y-auto flex flex-col ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="p-4 border-b border-lichess-border flex items-center justify-between">
@@ -72,7 +72,8 @@ export const ChapterSidebar: React.FC<ChapterSidebarProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-md hover:bg-lichess-surfaceHover text-gray-400 hover:text-white lg:hidden"
+            className="p-1.5 rounded-lg hover:bg-lichess-surfaceHover text-gray-400 hover:text-white transition-colors"
+            title="Close Chapters Drawer (Esc)"
           >
             <X className="w-5 h-5" />
           </button>
